@@ -1,0 +1,420 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Two licensed faces from the design spec, neither redistributable, so no font
+   files ship in this repo:
+
+     Grift     body copy, buttons, navigation -> falls back to Urbanist
+     Rockwell  headlines (--font-display)     -> falls back to Rokkitt
+     Nueva Std section eyebrows (--font-tag)  -> falls back to the Rockwell
+                                                 stack, which matches the
+                                                 semi-serif look in the comps
+
+   `local()` picks each one up on machines that have it installed (Rockwell
+   ships with Microsoft Office, so many Windows visitors get the real thing);
+   everywhere else the stack falls through to the metric-compatible Google
+   fallback loaded via next/font. See /public/fonts/README.md to self-host.
+   --------------------------------------------------------------------------- */
+@font-face {
+  font-family: 'Grift';
+  src: local('Grift');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Grift';
+  src: local('Grift Medium');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Grift';
+  src: local('Grift SemiBold');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Grift';
+  src: local('Grift Bold');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Grift';
+  src: local('Grift ExtraBold');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  /* Brand green straight off the design spec, plus a tonal ramp built from it. */
+  --color-brand-50: #e6f7ee;
+  --color-brand-100: #c2ebd7;
+  --color-brand-200: #8ddcb6;
+  --color-brand-300: #52cb92;
+  --color-brand-400: #21b972;
+  --color-brand-500: #00a550;
+  --color-brand-600: #009148;
+  --color-brand-700: #00773b;
+  --color-brand-800: #005c2d;
+  --color-brand-900: #00401f;
+
+  --color-ink-500: #6b7280;
+  --color-ink-700: #363636;
+  --color-ink-900: #111111;
+
+  /* Navbar + language label grey, straight off the spec (#5A6E5A), with a
+     darker step of the same hue for hover so the family stays consistent. */
+  --color-sage-500: #5a6e5a;
+  --color-sage-700: #3d4c3d;
+
+  /* Headline face: Rockwell 700 per the spec, Rokkitt as the free stand-in. */
+  --font-display: 'Rockwell', 'Rockwell Nova', var(--font-rokkitt), Georgia, serif;
+  --font-sans: 'Grift', var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
+  --font-tag: 'Nueva Std', 'Rockwell', 'Rockwell Nova', var(--font-rokkitt), Georgia, serif;
+
+  /* Total header height (66px bar + 2px progress rule). `main` reserves this
+     so the fixed header never sits on top of the hero. */
+  --spacing-header: 4.25rem;
+
+  --ease-brand: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ---------------------------------------------------------------------
+     Entrance animations are CSS, not JS, on purpose: `both` fill-mode means
+     the element's *final* state is what renders if the animation never runs
+     (no JS, a failed chunk, an offscreen tab). The hero copy is therefore
+     never blank, and these run on the compositor rather than the main thread.
+     prefers-reduced-motion collapses them to ~0ms in the base layer below.
+     --------------------------------------------------------------------- */
+  --animate-rise-in: rise-in 0.9s var(--ease-brand) both;
+  --animate-line-in: line-in 1.1s var(--ease-brand) both;
+  --animate-curtain-up: curtain-up 1.05s cubic-bezier(0.76, 0, 0.24, 1) 0.1s both;
+  --animate-header-in: header-in 0.8s var(--ease-brand) 0.1s both;
+
+  @keyframes rise-in {
+    from { opacity: 0; transform: translateY(24px); filter: blur(6px); }
+    to { opacity: 1; transform: none; filter: blur(0); }
+  }
+  @keyframes line-in {
+    from { opacity: 0; transform: translateY(110%) rotate(2deg) skewY(3deg); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes curtain-up {
+    from { transform: scaleY(1); }
+    to { transform: scaleY(0); }
+  }
+  @keyframes header-in {
+    from { opacity: 0; transform: translateY(-100%); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  --animate-shimmer: shimmer 2.4s var(--ease-brand) infinite;
+  @keyframes shimmer {
+    0% { transform: translateX(-120%); }
+    60%, 100% { transform: translateX(220%); }
+  }
+}
+
+@layer base {
+  * {
+    /* Keep focus rings on-brand everywhere. */
+    outline-color: var(--color-brand-500);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: #ffffff;
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Visible, consistent keyboard focus. Mouse users never see it. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-500);
+    color: #ffffff;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      /* `animation-timeline: auto` matters: a scroll-driven animation ignores
+         duration, so without this the reveals below would never resolve. */
+      animation-timeline: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      /* Also overrides the `@supports not (animation-timeline: view())`
+         fallback below, which otherwise leaves a reveal-* element paused on
+         its hidden first frame until RevealObserver's JS unpauses it — a
+         reduced-motion visitor should see everything immediately regardless
+         of whether that JS has run yet. */
+      animation-play-state: running !important;
+    }
+  }
+}
+
+@utility container-page {
+  /* The 1440 × 60px frame from the design, degrading gracefully on small screens. */
+  margin-inline: auto;
+  width: 100%;
+  max-width: 90rem; /* 1440px */
+  padding-inline: 1.25rem;
+
+  @media (width >= 40rem) {
+    padding-inline: 2rem;
+  }
+  @media (width >= 64rem) {
+    padding-inline: 3.75rem; /* 60px */
+  }
+}
+
+@utility text-balance-pretty {
+  text-wrap: balance;
+}
+
+/* Used by the headline reveal: each line masks its own overflow. */
+@utility line-mask {
+  display: block;
+  overflow: hidden;
+  padding-block: 0.06em;
+  margin-block: -0.06em;
+}
+
+/*
+  Background video: a fade that reveals it over the blurred placeholder, and
+  nothing else. No zoom or pan is applied -- the clip is left exactly as shot,
+  and it renders at the native scale object-cover gives it. CSS, so the frame
+  still appears if the player script never runs.
+*/
+@utility hero-video-motion {
+  animation: fade-in 1.5s var(--ease-brand) 0.35s both;
+}
+
+/* ---------------------------------------------------------------------------
+   Scroll-driven reveals.
+
+   These ride a `view()` timeline, so the element animates in as it scrolls
+   into the viewport. Browsers without scroll-timeline support (Safari, Firefox
+   at time of writing) ignore `animation-timeline` and simply run the animation
+   on page load instead — the content still ends up visible, which is the only
+   outcome that matters. `both` fill covers the no-JS/no-CSS-animation case too.
+
+   Both ends of the range sit inside `entry`, so a reveal always completes once
+   the element is roughly two thirds into view. Ending in `cover` would mean an
+   element near the bottom of a short page could never finish, since the page
+   runs out of scroll first.
+
+   Tune per element with --rev-start / --rev-end / --rev-delay; the delay only
+   takes effect in the non-scroll-timeline fallback, where it provides the
+   stagger that --rev-start provides otherwise.
+   --------------------------------------------------------------------------- */
+@utility reveal-up {
+  animation: rise-in 0.9s var(--ease-brand) var(--rev-delay, 0s) both;
+  animation-timeline: view();
+  animation-range: entry var(--rev-start, 10%) entry var(--rev-end, 70%);
+}
+
+@utility reveal-line {
+  animation: line-in 1s var(--ease-brand) var(--rev-delay, 0s) both;
+  animation-timeline: view();
+  animation-range: entry var(--rev-start, 10%) entry var(--rev-end, 70%);
+}
+
+@utility reveal-media {
+  animation: media-in 1.1s var(--ease-brand) var(--rev-delay, 0s) both;
+  animation-timeline: view();
+  animation-range: entry var(--rev-start, 2%) entry var(--rev-end, 58%);
+}
+
+@keyframes media-in {
+  from {
+    opacity: 0;
+    transform: translateY(38px) scale(1.06);
+    clip-path: inset(12% 0 0 0 round 16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 0 0 0 round 16px);
+  }
+}
+
+/* Meter segments grow from the baseline, one after another. */
+@utility reveal-bar {
+  animation: bar-in 0.5s var(--ease-brand) var(--rev-delay, 0s) both;
+  animation-timeline: view();
+  animation-range: entry var(--rev-start, 10%) entry var(--rev-end, 70%);
+}
+
+@keyframes bar-in {
+  from { opacity: 0; transform: scaleY(0.15); }
+  to { opacity: 1; transform: scaleY(1); }
+}
+
+/*
+  Background lattice for the dark sections — the designer's `Layer.png`, whose
+  artwork lives entirely in a 0..5 alpha channel. It is stored here as a mask
+  rather than a picture, so a single asset can be tinted per section (light on
+  dark, dark on light) by colouring the element underneath it.
+
+  The source is a one-off composition with no repeat period (autocorrelation
+  finds no minimum), so it cannot tile as-is. The asset is therefore the source
+  stacked with a vertically mirrored copy: the doubled tile's top and bottom
+  edges match, so `repeat` never shows a seam however tall the section grows.
+  Width is always 100%, which keeps the 45-degree angles true at every
+  breakpoint and reproduces the comp exactly at 1440px.
+*/
+@utility lattice-texture {
+  -webkit-mask-image: url('/media/texture-lattice.png');
+  mask-image: url('/media/texture-lattice.png');
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 100% auto;
+  mask-size: 100% auto;
+  -webkit-mask-position: top center;
+  mask-position: top center;
+}
+
+/* The step connector draws outward from its centre. */
+@utility reveal-draw {
+  animation: draw-x 1.1s var(--ease-brand) var(--rev-delay, 0s) both;
+  animation-timeline: view();
+  animation-range: entry var(--rev-start, 10%) entry var(--rev-end, 70%);
+}
+
+@keyframes draw-x {
+  from { opacity: 0; transform: scaleX(0); }
+  to { opacity: 1; transform: scaleX(1); }
+}
+
+/* Step markers pop rather than rise, so they read as landing on the line. */
+@utility reveal-pop {
+  animation: pop-in 0.7s var(--ease-brand) var(--rev-delay, 0s) both;
+  animation-timeline: view();
+  animation-range: entry var(--rev-start, 10%) entry var(--rev-end, 70%);
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.72); }
+  to { opacity: 1; transform: none; }
+}
+
+/*
+  Fallback for browsers with no `animation-timeline: view()` support (Safari,
+  and Firefox versions before it shipped scroll-driven animations). Without
+  this, every reveal-* animation above still runs — CSS just has no scroll
+  position to drive it from, so it plays once immediately on page load
+  instead of on scroll into view. Nothing below the first screen has been
+  seen yet at that point, so the whole site reads as static apart from the
+  hero (which never used a view-timeline to begin with).
+
+  RevealObserver (components/motion/reveal-observer.tsx) is the JS half:
+  it no-ops entirely where the native feature is supported (so this never
+  double-drives an element that already animates correctly), and otherwise
+  adds `.is-in-view` via IntersectionObserver at the moment each element
+  would have crossed `--rev-start`. This block just says: everywhere native
+  support is missing, stay on the animation's first frame (`both` fill
+  already guarantees that) until JS says otherwise.
+
+  The noscript rule in (marketing)/layout.tsx is the safety net for the one
+  case this doesn't cover — JS unavailable in a browser that also lacks
+  view-timeline support — so content is never permanently invisible.
+*/
+@supports not (animation-timeline: view()) {
+  .reveal-up,
+  .reveal-line,
+  .reveal-media,
+  .reveal-bar,
+  .reveal-draw,
+  .reveal-pop {
+    animation-play-state: paused;
+  }
+  .reveal-up.is-in-view,
+  .reveal-line.is-in-view,
+  .reveal-media.is-in-view,
+  .reveal-bar.is-in-view,
+  .reveal-draw.is-in-view,
+  .reveal-pop.is-in-view {
+    animation-play-state: running;
+  }
+}
+
+/*
+  Charge-range sliders. Native range inputs, restyled: the filled portion is
+  painted with a gradient driven by --fill (set inline from React), so the track
+  needs no extra element and the control keeps full keyboard support.
+*/
+@utility range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--color-brand-500) 0 var(--fill, 0%),
+    #e2ece6 var(--fill, 0%) 100%
+  );
+  cursor: pointer;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 999px;
+    background: var(--color-brand-500);
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+    transition: transform 0.2s var(--ease-brand);
+  }
+
+  &::-moz-range-thumb {
+    height: 16px;
+    width: 16px;
+    border-radius: 999px;
+    background: var(--color-brand-500);
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+    transition: transform 0.2s var(--ease-brand);
+  }
+
+  &:hover::-webkit-slider-thumb,
+  &:focus-visible::-webkit-slider-thumb {
+    transform: scale(1.15);
+  }
+  &:hover::-moz-range-thumb,
+  &:focus-visible::-moz-range-thumb {
+    transform: scale(1.15);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 4px;
+  }
+}

@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+build/
+.env
+.env.local
+.env*.local
+next-env.d.ts
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+.vercel
+
+# Runtime station data (see src/lib/stations/store.ts) — mutated by the admin
+# panel, not source. Back it up separately; don't rely on git history for it.
+/data/*.json
