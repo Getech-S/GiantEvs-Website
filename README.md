@@ -1,4 +1,4 @@
-# Giant Evs — giantevs.rw
+# Giant Evs — giantevs.com
 
 Marketing site for Giant Evs, Rwanda's EV charging network.
 
