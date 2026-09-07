@@ -31,9 +31,11 @@ function buildCsp(nonce: string, isDev: boolean): string {
       ...(isDev ? ["'unsafe-eval'"] : []),
     ],
     'style-src': ["'self'", "'unsafe-inline'"],
-    // OSM's basemap tiles for the stations map (see src/lib/map-tiles.ts);
-    // everything else on the site is same-origin.
-    'img-src': ["'self'", 'data:', 'blob:', MAP_TILE_CSP_HOST],
+    // OSM's basemap tiles for the stations map (see src/lib/map-tiles.ts) and
+    // Vercel Blob for admin-uploaded news images (see
+    // src/app/api/admin/upload/route.ts and the matching remotePatterns
+    // entry in next.config.ts) — everything else on the site is same-origin.
+    'img-src': ["'self'", 'data:', 'blob:', MAP_TILE_CSP_HOST, 'https://*.public.blob.vercel-storage.com'],
     'media-src': ["'self'", 'blob:'],
     'font-src': ["'self'", 'data:'],
     // Dev needs the HMR websocket; production talks to nothing but its own origin.

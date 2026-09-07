@@ -41,7 +41,12 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
     formats: ['image/avif', 'image/webp'],
-    // No remote loaders are configured, so block SVG rasterisation outright.
+    // Admin-uploaded news images live in Vercel Blob (see
+    // src/app/api/admin/upload/route.ts) rather than /public, so next/image
+    // needs an explicit remote pattern to optimise them. Keep this in sync
+    // with the CSP img-src entry in src/proxy.ts.
+    remotePatterns: [{ protocol: 'https', hostname: '**.public.blob.vercel-storage.com' }],
+    // Block SVG rasterisation outright — nothing we load needs it.
     dangerouslyAllowSVG: false,
   },
   async headers() {

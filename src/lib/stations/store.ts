@@ -1,71 +1,60 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
 
-import { CHARGER_TAGS, type StationInput, type StationRecord } from './types';
+import { sql } from '@/lib/db';
+
+import { CHARGER_TAGS, type ChargerTag, type StationInput, type StationRecord } from './types';
 
 /**
- * Server-only JSON file store for stations.
+ * Postgres-backed store for stations — see scripts/db/schema.sql for the
+ * table. This used to be a JSON file (see git history); that stopped
+ * working once the app moved to Vercel, whose serverless functions have no
+ * persistent, shared disk to write to. Everything above this module still
+ * goes through the functions below, so nothing else had to change.
  *
- * There is no database in this project — the station list is small (a
- * handful to a few hundred sites) and a single admin edits it at a time, so a
- * JSON file guarded by an in-process write queue is simpler to run, back up,
- * and inspect than standing up a database for it. If the app ever moves to a
- * serverless/multi-instance host, this file needs a real database instead:
- * the filesystem there is either read-only or not shared across instances, so
- * writes would silently vanish or diverge. Everything above this module goes
- * through the functions below, so swapping the implementation later only
- * means rewriting this one file.
- *
- * NEVER import this module from a Client Component — it uses `node:fs` and
- * must only run on the server (Route Handlers, Server Components).
+ * NEVER import this module from a Client Component — it talks to the
+ * database and must only run on the server (Route Handlers, Server
+ * Components).
  */
-
-const DATA_DIR = join(process.cwd(), 'data');
-const DATA_FILE = join(DATA_DIR, 'stations.json');
 
 export class StationValidationError extends Error {}
 
-// --- tiny in-process write queue -------------------------------------------
-// Prevents two concurrent admin requests from both reading the old array and
-// clobbering each other's write (classic read-modify-write race). Only
-// guards against races within this one Node process, which is what a single
-// `next start` instance is.
-let queue: Promise<unknown> = Promise.resolve();
-function withLock<T>(fn: () => Promise<T>): Promise<T> {
-  const result = queue.then(fn, fn);
-  queue = result.catch(() => undefined);
-  return result;
+type StationRow = {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  lat: number;
+  lng: number;
+  connectors: string[];
+  free_bays: number;
+  total_bays: number;
+  view_count: number;
+  last_viewed_at: Date | string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+};
+
+/** The driver returns TIMESTAMPTZ columns as Date objects; the rest of the app works with ISO strings. */
+function toIso(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value;
 }
 
-/** Fills in engagement fields for records written before they existed. */
-function normalize(station: StationRecord): StationRecord {
+function rowToStation(row: StationRow): StationRecord {
   return {
-    ...station,
-    viewCount: Number.isInteger(station.viewCount) ? station.viewCount : 0,
-    lastViewedAt: station.lastViewedAt ?? null,
+    id: row.id,
+    name: row.name,
+    address: row.address,
+    city: row.city,
+    lat: Number(row.lat),
+    lng: Number(row.lng),
+    connectors: row.connectors as ChargerTag[],
+    freeBays: row.free_bays,
+    totalBays: row.total_bays,
+    viewCount: row.view_count,
+    lastViewedAt: row.last_viewed_at ? toIso(row.last_viewed_at) : null,
+    createdAt: toIso(row.created_at),
+    updatedAt: toIso(row.updated_at),
   };
-}
-
-async function readAll(): Promise<StationRecord[]> {
-  try {
-    const raw = await readFile(DATA_FILE, 'utf8');
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as StationRecord[]).map(normalize) : [];
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw error;
-  }
-}
-
-async function writeAll(stations: StationRecord[]): Promise<void> {
-  await mkdir(dirname(DATA_FILE), { recursive: true });
-  // Write to a temp file and rename over the target — rename is atomic on the
-  // same filesystem, so a crash mid-write can never leave a half-written,
-  // corrupt stations.json behind.
-  const tmp = `${DATA_FILE}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(tmp, JSON.stringify(stations, null, 2), 'utf8');
-  await rename(tmp, DATA_FILE);
 }
 
 function validate(input: StationInput): void {
@@ -100,109 +89,84 @@ function validate(input: StationInput): void {
 }
 
 export async function listStations(): Promise<StationRecord[]> {
-  const stations = await readAll();
   // Newest first, so a station an admin just added is easy to find.
-  return [...stations].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const rows = await sql`SELECT * FROM stations ORDER BY created_at DESC`;
+  return (rows as StationRow[]).map(rowToStation);
 }
 
 export async function getStation(id: string): Promise<StationRecord | undefined> {
-  const stations = await readAll();
-  return stations.find((station) => station.id === id);
+  const rows = await sql`SELECT * FROM stations WHERE id = ${id}`;
+  return rows.length > 0 ? rowToStation(rows[0] as StationRow) : undefined;
 }
 
-export function createStation(input: StationInput): Promise<StationRecord> {
+export async function createStation(input: StationInput): Promise<StationRecord> {
   validate(input);
-  return withLock(async () => {
-    const stations = await readAll();
-    const now = new Date().toISOString();
-    const record: StationRecord = {
-      ...input,
-      id: randomUUID(),
-      createdAt: now,
-      updatedAt: now,
-      viewCount: 0,
-      lastViewedAt: null,
-    };
-    stations.push(record);
-    await writeAll(stations);
-    return record;
-  });
+  const id = randomUUID();
+  const rows = await sql`
+    INSERT INTO stations (id, name, address, city, lat, lng, connectors, free_bays, total_bays)
+    VALUES (${id}, ${input.name}, ${input.address}, ${input.city}, ${input.lat}, ${input.lng},
+            ${input.connectors}, ${input.freeBays}, ${input.totalBays})
+    RETURNING *
+  `;
+  return rowToStation(rows[0] as StationRow);
 }
 
-export function updateStation(id: string, input: StationInput): Promise<StationRecord> {
+export async function updateStation(id: string, input: StationInput): Promise<StationRecord> {
   validate(input);
-  return withLock(async () => {
-    const stations = await readAll();
-    const index = stations.findIndex((station) => station.id === id);
-    if (index === -1) throw new StationValidationError('Station not found.');
-    const updated: StationRecord = {
-      ...input,
-      id,
-      createdAt: stations[index]!.createdAt,
-      updatedAt: new Date().toISOString(),
-      viewCount: stations[index]!.viewCount,
-      lastViewedAt: stations[index]!.lastViewedAt,
-    };
-    stations[index] = updated;
-    await writeAll(stations);
-    return updated;
-  });
+  const rows = await sql`
+    UPDATE stations
+    SET name = ${input.name}, address = ${input.address}, city = ${input.city},
+        lat = ${input.lat}, lng = ${input.lng}, connectors = ${input.connectors},
+        free_bays = ${input.freeBays}, total_bays = ${input.totalBays}, updated_at = now()
+    WHERE id = ${id}
+    RETURNING *
+  `;
+  if (rows.length === 0) throw new StationValidationError('Station not found.');
+  return rowToStation(rows[0] as StationRow);
 }
 
-export function deleteStation(id: string): Promise<boolean> {
-  return withLock(async () => {
-    const stations = await readAll();
-    const next = stations.filter((station) => station.id !== id);
-    if (next.length === stations.length) return false;
-    await writeAll(next);
-    return true;
-  });
+export async function deleteStation(id: string): Promise<boolean> {
+  const rows = await sql`DELETE FROM stations WHERE id = ${id} RETURNING id`;
+  return rows.length > 0;
 }
 
 /**
  * Bumps a station's engagement counter. Called from the PUBLIC view-tracking
  * endpoint (no admin session), so it deliberately does none of the full
- * `validate()` work — it only ever touches `viewCount`/`lastViewedAt`.
+ * `validate()` work — it only ever touches view_count/last_viewed_at, and
+ * does it as a single atomic UPDATE rather than a read-then-write, so there
+ * is no race with a concurrent view of the same station.
  */
-export function recordStationView(id: string): Promise<boolean> {
-  return withLock(async () => {
-    const stations = await readAll();
-    const index = stations.findIndex((station) => station.id === id);
-    if (index === -1) return false;
-    stations[index] = {
-      ...stations[index]!,
-      viewCount: stations[index]!.viewCount + 1,
-      lastViewedAt: new Date().toISOString(),
-    };
-    await writeAll(stations);
-    return true;
-  });
+export async function recordStationView(id: string): Promise<boolean> {
+  const rows = await sql`
+    UPDATE stations SET view_count = view_count + 1, last_viewed_at = now()
+    WHERE id = ${id}
+    RETURNING id
+  `;
+  return rows.length > 0;
 }
 
 /**
  * Adjusts free-bay count directly, for the admin table's quick +/- controls —
  * a fast day-to-day path that doesn't require opening the full edit form for
- * a one-number change. Still goes through the same bounds check as the full
- * form (0 <= freeBays <= totalBays).
+ * a one-number change. Still enforces the same bounds check as the full form
+ * (0 <= freeBays <= totalBays).
  */
-export function setFreeBays(id: string, freeBays: number): Promise<StationRecord> {
+export async function setFreeBays(id: string, freeBays: number): Promise<StationRecord> {
   if (!Number.isInteger(freeBays) || freeBays < 0) {
     throw new StationValidationError('Free bays must be zero or a positive whole number.');
   }
-  return withLock(async () => {
-    const stations = await readAll();
-    const index = stations.findIndex((station) => station.id === id);
-    if (index === -1) throw new StationValidationError('Station not found.');
-    if (freeBays > stations[index]!.totalBays) {
-      throw new StationValidationError('Free bays cannot exceed total bays.');
-    }
-    const updated: StationRecord = {
-      ...stations[index]!,
-      freeBays,
-      updatedAt: new Date().toISOString(),
-    };
-    stations[index] = updated;
-    await writeAll(stations);
-    return updated;
-  });
+
+  const existing = await sql`SELECT total_bays FROM stations WHERE id = ${id}`;
+  if (existing.length === 0) throw new StationValidationError('Station not found.');
+  if (freeBays > (existing[0] as { total_bays: number }).total_bays) {
+    throw new StationValidationError('Free bays cannot exceed total bays.');
+  }
+
+  const rows = await sql`
+    UPDATE stations SET free_bays = ${freeBays}, updated_at = now()
+    WHERE id = ${id}
+    RETURNING *
+  `;
+  return rowToStation(rows[0] as StationRow);
 }

@@ -14,3 +14,6 @@ Thumbs.db
 # Runtime station data (see src/lib/stations/store.ts) — mutated by the admin
 # panel, not source. Back it up separately; don't rely on git history for it.
 /data/*.json
+
+.vercel
+.env*

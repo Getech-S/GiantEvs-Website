@@ -1,46 +1,54 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+
+import { sql } from '@/lib/db';
 
 import { slugify, type NewsBlock, type NewsInput, type NewsRecord } from './types';
 
 /**
- * Server-only JSON file store for news articles — same design as
- * src/lib/stations/store.ts (see the note there on why a JSON file, and on
- * why this doesn't survive a move to serverless/multi-instance hosting).
+ * Postgres-backed store for news articles — same reasoning and same shape of
+ * change as src/lib/stations/store.ts (see the note there on why this
+ * stopped being a JSON file once the app moved to Vercel).
  *
- * NEVER import this module from a Client Component — it uses `node:fs` and
- * must only run on the server (Route Handlers, Server Components).
+ * NEVER import this module from a Client Component — it talks to the
+ * database and must only run on the server (Route Handlers, Server
+ * Components).
  */
-
-const DATA_DIR = join(process.cwd(), 'data');
-const DATA_FILE = join(DATA_DIR, 'news.json');
 
 export class NewsValidationError extends Error {}
 
-let queue: Promise<unknown> = Promise.resolve();
-function withLock<T>(fn: () => Promise<T>): Promise<T> {
-  const result = queue.then(fn, fn);
-  queue = result.catch(() => undefined);
-  return result;
+type NewsRow = {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  cover_image: NewsRecord['coverImage'];
+  body: NewsBlock[];
+  created_at: Date | string;
+  updated_at: Date | string;
+};
+
+function toIso(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value;
 }
 
-async function readAll(): Promise<NewsRecord[]> {
-  try {
-    const raw = await readFile(DATA_FILE, 'utf8');
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as NewsRecord[]) : [];
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw error;
-  }
+function rowToNews(row: NewsRow): NewsRecord {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    category: row.category,
+    coverImage: row.cover_image,
+    body: row.body,
+    createdAt: toIso(row.created_at),
+    updatedAt: toIso(row.updated_at),
+  };
 }
 
-async function writeAll(articles: NewsRecord[]): Promise<void> {
-  await mkdir(dirname(DATA_FILE), { recursive: true });
-  const tmp = `${DATA_FILE}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(tmp, JSON.stringify(articles, null, 2), 'utf8');
-  await rename(tmp, DATA_FILE);
+/** Postgres' SQLSTATE for a unique-constraint violation. */
+const UNIQUE_VIOLATION = '23505';
+
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && (error as { code?: string }).code === UNIQUE_VIOLATION;
 }
 
 function validateBlock(block: NewsBlock, index: number, problems: string[]): void {
@@ -80,28 +88,42 @@ function validate(input: NewsInput): void {
 }
 
 export async function listNews(): Promise<NewsRecord[]> {
-  const articles = await readAll();
   // Newest first, same as stations — an article an admin just added or
   // edited is the one they want to see.
-  return [...articles].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const rows = await sql`SELECT * FROM news_articles ORDER BY updated_at DESC`;
+  return (rows as NewsRow[]).map(rowToNews);
 }
 
 export async function getNews(id: string): Promise<NewsRecord | undefined> {
-  const articles = await readAll();
-  return articles.find((article) => article.id === id);
+  const rows = await sql`SELECT * FROM news_articles WHERE id = ${id}`;
+  return rows.length > 0 ? rowToNews(rows[0] as NewsRow) : undefined;
 }
 
 export async function getNewsBySlug(slug: string): Promise<NewsRecord | undefined> {
-  const articles = await readAll();
-  return articles.find((article) => article.slug === slug);
+  const rows = await sql`SELECT * FROM news_articles WHERE slug = ${slug}`;
+  return rows.length > 0 ? rowToNews(rows[0] as NewsRow) : undefined;
 }
 
 /** Slug must be unique; append -2, -3, … until it is. `ignoreId` excludes the article being edited from the check. */
 async function uniqueSlug(base: string, ignoreId?: string): Promise<string> {
-  const articles = await readAll();
+  const taken = new Set(
+    (
+      await sql`
+        SELECT slug FROM news_articles
+        WHERE slug = ${base} OR slug LIKE ${`${base}-%`}
+      `
+    ).map((row) => (row as { slug: string }).slug),
+  );
+
+  // The article being edited is allowed to keep its own current slug.
+  if (ignoreId) {
+    const own = await sql`SELECT slug FROM news_articles WHERE id = ${ignoreId}`;
+    if (own.length > 0) taken.delete((own[0] as { slug: string }).slug);
+  }
+
   let candidate = base || 'article';
   let suffix = 2;
-  while (articles.some((article) => article.slug === candidate && article.id !== ignoreId)) {
+  while (taken.has(candidate)) {
     candidate = `${base}-${suffix}`;
     suffix += 1;
   }
@@ -113,14 +135,22 @@ export async function createNews(input: NewsInput): Promise<NewsRecord> {
   const resolved: NewsInput = { ...input, slug };
   validate(resolved);
 
-  return withLock(async () => {
-    const articles = await readAll();
-    const now = new Date().toISOString();
-    const record: NewsRecord = { ...resolved, id: randomUUID(), createdAt: now, updatedAt: now };
-    articles.push(record);
-    await writeAll(articles);
-    return record;
-  });
+  const id = randomUUID();
+  try {
+    const rows = await sql`
+      INSERT INTO news_articles (id, slug, title, category, cover_image, body)
+      VALUES (${id}, ${resolved.slug}, ${resolved.title}, ${resolved.category},
+              ${JSON.stringify(resolved.coverImage)}::jsonb, ${JSON.stringify(resolved.body)}::jsonb)
+      RETURNING *
+    `;
+    return rowToNews(rows[0] as NewsRow);
+  } catch (error) {
+    // Two admins (or two tabs) publishing the same title at the same instant
+    // could both compute the same "free" slug before either has inserted —
+    // the unique constraint is the real guard; this just retries once past it.
+    if (isUniqueViolation(error)) return createNews(input);
+    throw error;
+  }
 }
 
 export async function updateNews(id: string, input: NewsInput): Promise<NewsRecord> {
@@ -128,28 +158,24 @@ export async function updateNews(id: string, input: NewsInput): Promise<NewsReco
   const resolved: NewsInput = { ...input, slug };
   validate(resolved);
 
-  return withLock(async () => {
-    const articles = await readAll();
-    const index = articles.findIndex((article) => article.id === id);
-    if (index === -1) throw new NewsValidationError('Article not found.');
-    const updated: NewsRecord = {
-      ...resolved,
-      id,
-      createdAt: articles[index]!.createdAt,
-      updatedAt: new Date().toISOString(),
-    };
-    articles[index] = updated;
-    await writeAll(articles);
-    return updated;
-  });
+  try {
+    const rows = await sql`
+      UPDATE news_articles
+      SET slug = ${resolved.slug}, title = ${resolved.title}, category = ${resolved.category},
+          cover_image = ${JSON.stringify(resolved.coverImage)}::jsonb,
+          body = ${JSON.stringify(resolved.body)}::jsonb, updated_at = now()
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    if (rows.length === 0) throw new NewsValidationError('Article not found.');
+    return rowToNews(rows[0] as NewsRow);
+  } catch (error) {
+    if (isUniqueViolation(error)) return updateNews(id, input);
+    throw error;
+  }
 }
 
-export function deleteNews(id: string): Promise<boolean> {
-  return withLock(async () => {
-    const articles = await readAll();
-    const next = articles.filter((article) => article.id !== id);
-    if (next.length === articles.length) return false;
-    await writeAll(next);
-    return true;
-  });
+export async function deleteNews(id: string): Promise<boolean> {
+  const rows = await sql`DELETE FROM news_articles WHERE id = ${id} RETURNING id`;
+  return rows.length > 0;
 }

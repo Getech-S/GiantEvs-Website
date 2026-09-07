@@ -1,7 +1,4 @@
-import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
-
+import { put } from '@vercel/blob';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { getAdminUsername } from '@/lib/auth/require-admin';
@@ -11,10 +8,11 @@ import { getAdminUsername } from '@/lib/auth/require-admin';
  * every `/api/admin/*` route for unauthenticated requests; the check here is
  * defense in depth, not the primary gate.
  *
- * Saves straight to `public/media/news-uploads/`, which `next start` serves
- * directly from disk with no rebuild needed — the same JSON-file-store
- * assumption as src/lib/news/store.ts applies here too: this only works on a
- * single, persistent Node process, not serverless/multi-instance hosting.
+ * Uploads to Vercel Blob rather than the local filesystem — Vercel's
+ * serverless functions have no persistent, shared disk to write to (a file
+ * saved during one request wouldn't exist for the next one, or on another
+ * instance). Blob storage is the direct replacement: same "give the admin a
+ * URL back" contract, just backed by real, durable storage.
  */
 
 const MAX_BYTES = 8 * 1024 * 1024; // 8MB
@@ -23,8 +21,6 @@ const ALLOWED_TYPES: Record<string, string> = {
   'image/png': 'png',
   'image/webp': 'webp',
 };
-
-const UPLOAD_DIR = join(process.cwd(), 'public', 'media', 'news-uploads');
 
 export async function POST(request: NextRequest) {
   const admin = await getAdminUsername();
@@ -55,12 +51,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Own generated filename — never the client-supplied name — so there's no
+  // Own generated pathname — never the client-supplied name — so there's no
   // path-traversal surface and no risk of one upload overwriting another.
-  const filename = `${randomUUID()}.${extension}`;
-  await mkdir(UPLOAD_DIR, { recursive: true });
-  const bytes = Buffer.from(await file.arrayBuffer());
-  await writeFile(join(UPLOAD_DIR, filename), bytes);
+  // `addRandomSuffix` is a second guard against collisions on top of that.
+  const blob = await put(`news-uploads/${crypto.randomUUID()}.${extension}`, file, {
+    access: 'public',
+    addRandomSuffix: true,
+    contentType: file.type,
+  });
 
-  return NextResponse.json({ path: `/media/news-uploads/${filename}` }, { status: 201 });
+  return NextResponse.json({ path: blob.url }, { status: 201 });
 }
