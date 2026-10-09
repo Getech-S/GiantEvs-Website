@@ -4,8 +4,10 @@ import { PageHeroBand } from '@/components/sections/page-hero-band';
 import { NewsCard } from '@/components/ui/news-card';
 import { listNews } from '@/lib/news/store';
 import { newsGridClass } from '@/lib/news/types';
+import { pageMetadata } from '@/lib/seo';
+import { seo } from '@/lib/site';
 
-export const metadata: Metadata = { title: 'News' };
+export const metadata: Metadata = pageMetadata({ path: '/news', ...seo.news });
 
 export default async function NewsPage() {
   const articles = await listNews();

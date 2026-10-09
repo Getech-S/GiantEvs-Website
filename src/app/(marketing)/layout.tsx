@@ -3,7 +3,9 @@ import type { Metadata, Viewport } from 'next';
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
 import { RevealObserver } from '@/components/motion/reveal-observer';
-import { site } from '@/lib/site';
+import { JsonLd } from '@/components/seo/json-ld';
+import { organizationJsonLd, shareImage } from '@/lib/seo';
+import { seo, site } from '@/lib/site';
 
 import { fontVariables } from '../fonts';
 import '../globals.css';
@@ -30,34 +32,40 @@ import 'leaflet/dist/leaflet.css';
 // "/stations" work) or every page author remembering this footgun.
 export const dynamic = 'force-dynamic';
 
+// No `alternates.canonical` here, deliberately: a layout's canonical is
+// inherited by every page beneath it, which made all six public pages tell
+// Google they were duplicates of the homepage. Each page sets its own via
+// pageMetadata() in src/lib/seo.ts.
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.name} — ${site.tagline}`,
+    default: seo.home.title,
     template: `%s | ${site.name}`,
   },
-  description: site.description,
+  description: seo.home.description,
   applicationName: site.name,
   keywords: [
+    'EV charging Kigali',
     'EV charging Rwanda',
-    'electric vehicle charging Kigali',
+    'electric car charging station Kigali',
+    'electric vehicle charging Rwanda',
+    'DC fast charging Kigali',
+    'EV charger installation Rwanda',
     'Giant Evs',
-    'charging stations Rwanda',
-    'host a charger',
   ],
-  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: site.locale,
-    url: site.url,
     siteName: site.name,
-    title: `${site.name} — ${site.tagline}`,
-    description: site.description,
+    title: seo.home.title,
+    description: seo.home.description,
+    images: [shareImage],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${site.name} — ${site.tagline}`,
-    description: site.description,
+    title: seo.home.title,
+    description: seo.home.description,
+    images: [shareImage],
   },
   robots: {
     index: true,
@@ -104,6 +112,7 @@ export default function MarketingRootLayout({ children }: { children: React.Reac
         </main>
         <Footer />
         <RevealObserver />
+        <JsonLd data={organizationJsonLd()} />
       </body>
     </html>
   );

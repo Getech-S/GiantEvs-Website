@@ -1,23 +1,40 @@
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { AnimatedHeadline } from '@/components/sections/animated-headline';
 import { NewsArticleBody } from '@/components/sections/news-article-body';
 import { RelatedNews } from '@/components/sections/related-news';
+import { JsonLd } from '@/components/seo/json-ld';
 import { getNewsBySlug, listNews } from '@/lib/news/store';
+import { absoluteUrl, articleExcerpt, articleJsonLd, pageMetadata } from '@/lib/seo';
 
 type PageProps = { params: Promise<{ slug: string }> };
 
+// One database read per request, shared by generateMetadata and the page.
+const getArticle = cache(getNewsBySlug);
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = await getNewsBySlug(slug);
+  const article = await getArticle(slug);
   if (!article) return {};
-  return { title: article.title };
+  return pageMetadata({
+    path: `/news/${article.slug}`,
+    title: article.title,
+    description: articleExcerpt(article),
+    openGraph: {
+      type: 'article',
+      publishedTime: article.createdAt,
+      modifiedTime: article.updatedAt,
+      section: article.category,
+      images: [{ url: absoluteUrl(article.coverImage.src), alt: article.coverImage.alt }],
+    },
+  });
 }
 
 export default async function NewsArticlePage({ params }: PageProps) {
   const { slug } = await params;
-  const article = await getNewsBySlug(slug);
+  const article = await getArticle(slug);
   if (!article) notFound();
 
   const others = (await listNews()).filter((entry) => entry.id !== article.id).slice(0, 3);
@@ -49,6 +66,7 @@ export default async function NewsArticlePage({ params }: PageProps) {
       {/* Only ever real other articles — never the current one repeated,
           never a fabricated row when nothing else has been published yet. */}
       {others.length > 0 ? <RelatedNews articles={others} /> : null}
+      <JsonLd data={articleJsonLd(article)} />
     </div>
   );
 }

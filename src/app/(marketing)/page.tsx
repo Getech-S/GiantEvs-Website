@@ -1,4 +1,4 @@
-import { headers } from 'next/headers';
+import type { Metadata } from 'next';
 
 import { Hero } from '@/components/sections/hero';
 import { OurStory } from '@/components/sections/our-story';
@@ -10,33 +10,20 @@ import { Services } from '@/components/sections/services';
 import { Stations } from '@/components/sections/stations';
 import { Stories } from '@/components/sections/stories';
 import { VipReserveFab } from '@/components/ui/vip-reserve-fab';
-import { site } from '@/lib/site';
+import { pageMetadata } from '@/lib/seo';
+import { seo } from '@/lib/site';
 import { listStations } from '@/lib/stations/store';
 
-/** Schema.org payload so search engines can surface the brand + phone number. */
-const organizationJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: site.name,
-  slogan: site.tagline,
-  url: site.url,
-  description: site.description,
-  logo: `${site.url}/brand/giant-evs-logo.png`,
-  areaServed: { '@type': 'Country', name: 'Rwanda' },
-  contactPoint: [
-    {
-      '@type': 'ContactPoint',
-      telephone: site.phone.display,
-      contactType: 'customer service',
-      areaServed: 'RW',
-      availableLanguage: ['English', 'French', 'Kinyarwanda'],
-    },
-  ],
-};
+// The Organization structured data that used to live here is now emitted
+// site-wide from the marketing layout (see organizationJsonLd in lib/seo.ts).
+export const metadata: Metadata = pageMetadata({
+  path: '/',
+  title: seo.home.title,
+  description: seo.home.description,
+  absoluteTitle: true,
+});
 
 export default async function HomePage() {
-  // The strict CSP blocks unnonced inline <script>, JSON-LD included.
-  const nonce = (await headers()).get('x-nonce') ?? undefined;
   const stations = await listStations();
 
   return (
@@ -51,13 +38,6 @@ export default async function HomePage() {
       <Stories />
       <Partners />
       <VipReserveFab />
-
-      <script
-        nonce={nonce}
-        type="application/ld+json"
-        // Static, developer-authored object — no user input reaches this string.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
-      />
     </>
   );
 }

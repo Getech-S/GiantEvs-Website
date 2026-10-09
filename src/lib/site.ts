@@ -6,10 +6,16 @@
 export const site = {
   name: 'Giant Evs',
   tagline: 'Simply Powerful',
-  description:
-    "Rwanda's EV charging network. Real-time availability, transparent pricing and zero range anxiety — find an open charger before you start the ignition.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://giantevs.rw',
+  /**
+   * The canonical origin every page, sitemap entry and share card points at.
+   * www, not the bare domain: Vercel 308-redirects giantevs.com to
+   * www.giantevs.com, and a canonical URL that itself redirects is a mixed
+   * signal to search engines.
+   */
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.giantevs.com',
   locale: 'en_RW',
+  /** The published office address (also shown on /partner) — used in structured data. */
+  address: { street: 'KG 7 Ave', city: 'Kigali', country: 'RW', countryName: 'Rwanda' },
   phone: {
     display: '+250 787 672 455',
     // E.164 for tel: links.
@@ -19,6 +25,47 @@ export const site = {
   },
   /** Where the contact form (see /contact and /api/contact) delivers every message. */
   email: 'operations@giantevs.com',
+} as const;
+
+/**
+ * Search-result copy per page: the <title> (the root layout appends
+ * " | Giant Evs" unless `absolute`) and the meta description Google shows
+ * under it. Written around what people in Rwanda actually search for — "EV
+ * charging", "charging station", "Kigali" — and kept strictly to claims the
+ * site itself makes elsewhere. Titles stay under ~60 characters and
+ * descriptions under ~155 so search results don't truncate them.
+ */
+export const seo = {
+  home: {
+    title: 'Giant Evs — EV Charging Stations in Kigali, Rwanda',
+    description:
+      'Find an open EV charger in Kigali before you set off. Giant Evs runs DC fast charging across Rwanda with live availability, clear pricing and on-site staff.',
+  },
+  stations: {
+    title: 'EV Charging Stations in Kigali — Live Map',
+    description:
+      'Live map of Giant Evs EV charging stations in Kigali and across Rwanda — see which chargers are free right now, connector types and addresses.',
+  },
+  partner: {
+    title: 'Host an EV Charger at Your Business in Rwanda',
+    description:
+      'Turn your parking into an EV charging destination. Giant Evs handles the hardware, installation and maintenance for businesses across Rwanda.',
+  },
+  about: {
+    title: "About Us — Rwanda's EV Charging Network",
+    description:
+      'Giant Evs is building the electric vehicle charging network Rwanda needs — starting in Kigali, with ambitions across Africa. Meet the team behind it.',
+  },
+  contact: {
+    title: 'Contact Us — EV Charging Support in Kigali',
+    description:
+      'Questions about charging, pricing or hosting a charger? Call Giant Evs on +250 787 672 455 or email operations@giantevs.com — we reply within 24 hours.',
+  },
+  news: {
+    title: 'EV News & Updates from Rwanda',
+    description:
+      'News, guides and updates on electric mobility and EV charging in Rwanda from the Giant Evs team.',
+  },
 } as const;
 
 export type NavItem = {
