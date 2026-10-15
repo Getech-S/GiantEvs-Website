@@ -17,7 +17,7 @@ const getStations = cache(listStations);
 
 export async function generateMetadata(): Promise<Metadata> {
   const stations = await getStations();
-  // Name real stations in the snippet — "Rubis Kisimenti (KN 5 Rd)" is what
+  // Name real stations in the snippet — "GiantEvs Kimironko Station (KG 213 St)" is what
   // someone searching for a charger near a landmark actually types.
   const named = stations
     .slice(0, 2)
