@@ -18,6 +18,11 @@ export type StationRecord = {
   lat: number;
   lng: number;
   connectors: ChargerTag[];
+  /**
+   * Peak output of the station's fastest charger, in kW (e.g. 240), or null
+   * when not set. Shown next to that charger's connector type.
+   */
+  powerKw: number | null;
   /** Bays currently free. */
   freeBays: number;
   /** Total bays at the site. */
@@ -51,4 +56,16 @@ export type StationInput = Omit<
  */
 export function stationStatus(station: Pick<StationRecord, 'freeBays'>): StationStatus {
   return station.freeBays > 0 ? 'available' : 'occupied';
+}
+
+/**
+ * Connector label with the station's peak power attached to its fastest
+ * connector only — "240 kW DC Fast" — since that's the one the peak figure
+ * belongs to; slower connectors at the same site keep their plain label.
+ * CHARGER_TAGS runs slowest to fastest, so the fastest is the highest index.
+ */
+export function connectorLabel(tag: ChargerTag, station: Pick<StationRecord, 'connectors' | 'powerKw'>): string {
+  if (!station.powerKw) return tag;
+  const fastest = station.connectors.reduce((a, b) => (CHARGER_TAGS.indexOf(b) > CHARGER_TAGS.indexOf(a) ? b : a));
+  return tag === fastest ? `${station.powerKw} kW ${tag}` : tag;
 }

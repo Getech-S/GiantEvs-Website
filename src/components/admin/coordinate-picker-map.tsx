@@ -5,14 +5,11 @@ import L from 'leaflet';
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents, ZoomControl } from 'react-leaflet';
 import { Loader2, MapPin, Search } from 'lucide-react';
 
+import { chargerPinIcon } from '@/components/stations/charger-pin';
 import { MAP_TILE_ATTRIBUTION, MAP_TILE_MAX_ZOOM, MAP_TILE_SUBDOMAINS, MAP_TILE_URL } from '@/lib/map-tiles';
 
-const markerIcon = L.divIcon({
-  className: '',
-  iconSize: [22, 22],
-  iconAnchor: [11, 11],
-  html: `<span style="display:block;width:22px;height:22px;border-radius:999px;background:#00A550;border:3px solid #ffffff;box-shadow:0 1px 6px rgba(0,0,0,0.45)"></span>`,
-});
+// Same charger pin as the public map; its tip marks the exact coordinate being set.
+const markerIcon = chargerPinIcon('#00A550', { selected: true });
 
 function ClickToPlace({ onChange }: { onChange: (lat: number, lng: number) => void }) {
   useMapEvents({

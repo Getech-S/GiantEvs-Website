@@ -35,14 +35,14 @@ async function readJson(filename) {
 const stations = await readJson('stations.json');
 for (const station of stations) {
   await sql`
-    INSERT INTO stations (id, name, address, city, lat, lng, connectors, free_bays, total_bays,
+    INSERT INTO stations (id, name, address, city, lat, lng, connectors, power_kw, free_bays, total_bays,
                            view_count, last_viewed_at, created_at, updated_at)
     VALUES (${station.id}, ${station.name}, ${station.address}, ${station.city}, ${station.lat}, ${station.lng},
-            ${station.connectors}, ${station.freeBays}, ${station.totalBays},
+            ${station.connectors}, ${station.powerKw ?? null}, ${station.freeBays}, ${station.totalBays},
             ${station.viewCount ?? 0}, ${station.lastViewedAt ?? null}, ${station.createdAt}, ${station.updatedAt})
     ON CONFLICT (id) DO UPDATE SET
       name = EXCLUDED.name, address = EXCLUDED.address, city = EXCLUDED.city,
-      lat = EXCLUDED.lat, lng = EXCLUDED.lng, connectors = EXCLUDED.connectors,
+      lat = EXCLUDED.lat, lng = EXCLUDED.lng, connectors = EXCLUDED.connectors, power_kw = EXCLUDED.power_kw,
       free_bays = EXCLUDED.free_bays, total_bays = EXCLUDED.total_bays,
       view_count = EXCLUDED.view_count, last_viewed_at = EXCLUDED.last_viewed_at,
       created_at = EXCLUDED.created_at, updated_at = EXCLUDED.updated_at

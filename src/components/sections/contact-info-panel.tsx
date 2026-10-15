@@ -24,9 +24,8 @@ export function ContactInfoPanel() {
         alt={contactPage.image.alt}
         fill
         sizes="(min-width: 1024px) 37.5rem, 92vw"
-        // The source is a wide panorama; bias the crop right-of-centre so it
-        // keeps the chargers, buses and skyline rather than the entry sign.
-        className="object-cover object-[62%_42%]"
+        // Already cropped square around the logo, charger and car.
+        className="object-cover"
         quality={92}
       />
 

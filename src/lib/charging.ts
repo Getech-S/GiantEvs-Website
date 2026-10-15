@@ -15,8 +15,10 @@ export type ChargerType = {
    * Tariff in RWF per kWh *delivered by the charger* — public chargers meter at
    * the outlet, not at the battery.
    *
-   * PLACEHOLDER RATES: confirm against the real Giant Evs tariff before launch.
-   * They live here so a single edit updates the whole calculator.
+   * DC Fast (the only speed the calculator offers) is Giant Evs' real tariff,
+   * 450 RWF/kWh. The other rates are unconfirmed placeholders — they're not
+   * shown anywhere today. They live here so a single edit updates the whole
+   * calculator.
    */
   rate: number;
   /**
@@ -36,7 +38,7 @@ export type ChargerType = {
 export const chargerTypes: readonly ChargerType[] = [
   { id: 'ac-standard', name: 'AC Standard', power: 7, rate: 250, tapers: false, efficiency: 0.86 },
   { id: 'ac-fast', name: 'AC Fast', power: 22, rate: 300, tapers: false, efficiency: 0.88 },
-  { id: 'dc-fast', name: 'DC Fast', power: 50, rate: 380, tapers: true, efficiency: 0.92 },
+  { id: 'dc-fast', name: 'DC Fast', power: 50, rate: 450, tapers: true, efficiency: 0.92 },
   { id: 'dc-ultra', name: 'DC Ultra', power: 120, rate: 450, tapers: true, efficiency: 0.93 },
 ];
 

@@ -101,14 +101,17 @@ export const hero = {
   primaryCta: { label: 'Find a Station', href: '/stations' },
   secondaryCta: { label: 'Host a Charger', href: '/partner' },
   video: {
-    src: '/media/hero-charging.mp4',
     /**
-     * 40x23 JPEG of the video's own mid-point frame, inlined so the hero has
-     * a colour-accurate placeholder on first paint with zero extra requests.
-     * Regenerate with `python scripts/prepare-hero-video.py <src>`.
+     * 12-second loop (18s-30s) from the architect's walkthrough of a Giant Evs
+     * solar-canopy site: under the canopy, then the charger beside a Tesla.
+     * AI-upscaled 4x (Real-ESRGAN) from the 832x464 source — regenerate with
+     * scripts/media/prepare-hero-video.py. `src` is 4K for large screens;
+     * `srcSmall` is 1080p for phones and tablets (see hero-video.tsx).
      */
-    lqip:
-      'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAwICQsJCAwLCgsODQwOEh4UEhEREiUbHBYeLCcuLisnKyoxN0Y7MTRCNCorPVM+QkhKTk9OLztWXFVMW0ZNTkv/2wBDAQ0ODhIQEiQUFCRLMisyS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0v/wAARCAAWACgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDjr6T5AjybgTvDY9sf0qpb+WWzLKoz2INO86Jmbz1LkcAg/KPrT41hUbTCJCO5z/jTWgnqOKLJcERqArH5cHOB/OrCWJki3I6kkZCjOTzj0phu1gidY4YkLjBwoJx+PStC1FuiYdX3Lxndj5d2enriqUmS0Zt3bOsTM6sXGAOO1Fa8iK8f7uOXYM/e9MD2oqWuw0cgr5jz3wR0qzb2090P9aAvpRRQM07XSIgytJI7kenArZjtIApcKQ3rxmiiqRnIo6pqEkYEaEgnnJooorOT1KR//9k=',
+    src: '/media/hero-remera-station-4k.mp4',
+    srcSmall: '/media/hero-remera-station-1080.mp4',
+    /** 40px JPEG of a frame one second in, inlined as the placeholder behind the video. */
+    lqip: 'data:image/jpeg;base64,/9j//gAQTGF2YzYxLjE5LjEwMAD/2wBDAAgMDA4MDhAQEBAQEBMSExQUFBMTExMUFBQVFRUZGRkVFRUUFBUVGBgZGRscGxoaGRocHB4eHiQkIiIqKiszMz7/xACDAAEBAQEBAQAAAAAAAAAAAAAGBQcBAAQBAAMBAAAAAAAAAAAAAAAAAAMCAQAQAAIBAgQCBAoLAQAAAAAAAAIBAwQRIQAxEkEFIjJRExSSoUJxNJEVBmGxs4F0VHJzUtPUUzURAAICAQMFAQAAAAAAAAAAAAABAiERElETQZGhsVJx/8AAEQgAFgAoAwEiAAIRAAMRAP/aAAwDAQACEQMRAD8AQcqnnjjh8JkjA8CIjsykG/B6L58c26atlOWdVHduLBxYiWFsU8dL4rJmtrkGxOKkJiTQqWqS2tq/nRptWurbduOuT8fMqgDEVFCyuTsoiliVx13jqmm3gKV3lLe5s43PVAuOulPoWI2QoL2Sve3VX25u1XxNTgmxl6Q9JjEHeYYYETexdmqyG5jUT1Ma3pCKTZ9ykIu/A2OLGyTSemYRqohowESjUUxOOyEd5IJAkYmSW627a8b50ZaM1JX19iznrwnminzXmcnNu7BRl0biivciw8+1h9mTfu+o/Z5Vn7oyiiTbjRWTwbdnfVXTF+VaZ54bB+Dj8aX+xmcsJW2/AL8a7moV8Vqvqg1JtvuV+t2Jpq91xwzN5hQUtFIUZnVMgiU0qjMRRNq7sdkWj0sh+WbnMPW4/TF9LzP+IvXKr7oP1Y5KmFMsOtUokEQMI9zG7bZ4tdrdlbgi1yhpa6nkNKpp+9iUpk0isbZxxgscME+lZWxyGg6hfqZswcfz/wAea7IPeZ/DkKiVRSTSxIsUEljH0dq9ryM911P+0XivOz1f/Oj9GQ+R8cPlCOK2P//Z',
   },
 } as const;
 
@@ -166,8 +169,10 @@ export const hostPromo = {
     'Transform your parking real estate into a premium destination. We handle the hardware, installation, and continuous maintenance. You attract high-value EV drivers who stay longer and spend more.',
   cta: { label: 'Learn More', href: '/partner' },
   image: {
-    src: '/media/promo-space.jpg',
-    alt: 'An electric car charging from a Giant Evs pillar outside a glass-fronted building at dusk',
+    src: '/media/home/host-promo-canopy-4k.jpg',
+    alt: "Architect's render of a Giant Evs solar-canopy charging site: a Tesla parked beside a Giant Evs DC fast charger",
+    /** Keeps the Tesla's wheels in on wide screens and the charger in on phones. */
+    position: '55% 85%',
   },
 } as const;
 
@@ -217,11 +222,13 @@ export const partnerHero = {
   headline: ['Turn Your Parking Space', 'Into a Premium Asset'],
   body: 'We handle the hardware, installation, and ongoing support. You attract high-value EV drivers who stay longer and spend more at your business.',
   cta: { label: 'Get a Quote', href: '#partner-enquiry' },
-  // Same real photo as the homepage's Host Promo band (see `hostPromo`
-  // above) — this page's hero is that same full-bleed treatment, reused
-  // rather than duplicated, with copy aimed at a prospective host instead
-  // of a general visitor.
-  image: hostPromo.image,
+  // Its own render rather than the homepage's — a garage lined with Giant
+  // Evs chargers is exactly the "your parking space, upgraded" this copy sells.
+  image: {
+    src: '/media/partner/partner-garage-4k.jpg',
+    alt: "Architect's render of an underground car park with Giant Evs chargers at every bay",
+    position: '60% 80%',
+  },
 } as const;
 
 export type PartnerValueIcon = 'customers' | 'hassle' | 'brand';
@@ -400,11 +407,15 @@ export type FooterColumn = { title: string; links: readonly FooterLink[] };
 export const footer = {
   tagline:
     "Rwanda's most trusted EV charging network. Powering clean mobility across the Land of a Thousand Hills.",
+  // TikTok, X and Instagram are Giant Evs' real profiles. LinkedIn still
+  // points at the platform's home page — swap in the company page URL once it
+  // exists and flip `profile` to true. Only real profiles go into `sameAs`
+  // (lib/seo.ts).
   socials: [
-    { id: 'facebook', label: 'Facebook', href: 'https://facebook.com' },
-    { id: 'x', label: 'X (formerly Twitter)', href: 'https://x.com' },
-    { id: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.com' },
-    { id: 'instagram', label: 'Instagram', href: 'https://instagram.com' },
+    { id: 'tiktok', label: 'Giant Evs on TikTok', href: 'https://www.tiktok.com/@giantevs', profile: true },
+    { id: 'x', label: 'Giant Evs on X', href: 'https://x.com/giantevs', profile: true },
+    { id: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.com', profile: false },
+    { id: 'instagram', label: 'Giant Evs on Instagram', href: 'https://www.instagram.com/giantevs/', profile: true },
   ],
   columns: [
     {
@@ -532,7 +543,7 @@ export const contactPage = {
     'Support',
   ],
   image: {
-    src: '/media/contact/charging-hub.jpg',
-    alt: 'The Kigali EV Charging Hub, with buses and cars charging at Giant Evs stations',
+    src: '/media/contact/contact-garage-4k.jpg',
+    alt: "Architect's render of a Giant Evs charging bay: the Giant Evs logo, a DC fast charger and a Tesla",
   },
 } as const;

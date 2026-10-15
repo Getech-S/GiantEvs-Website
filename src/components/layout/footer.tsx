@@ -1,11 +1,8 @@
 import Link from 'next/link';
-import { Facebook, Instagram, Linkedin, X } from 'lucide-react';
-
 import { Logo } from '@/components/ui/logo';
+import { SocialIcon, type SocialIconId } from '@/components/ui/social-icon';
 import { footer, site } from '@/lib/site';
 import { cn } from '@/lib/utils';
-
-const socialIcons = { facebook: Facebook, x: X, linkedin: Linkedin, instagram: Instagram } as const;
 
 /**
  * Shared across every page via the root layout — built once here rather than
@@ -28,7 +25,6 @@ export function Footer() {
 
             <ul className="mt-7 flex items-center gap-3">
               {footer.socials.map((social) => {
-                const Icon = socialIcons[social.id as keyof typeof socialIcons];
                 return (
                   <li key={social.id}>
                     <a
@@ -42,7 +38,7 @@ export function Footer() {
                         'hover:bg-brand-500 hover:text-white',
                       )}
                     >
-                      <Icon className="h-4 w-4" strokeWidth={2} aria-hidden />
+                      <SocialIcon id={social.id as SocialIconId} className="h-4 w-4" />
                     </a>
                   </li>
                 );

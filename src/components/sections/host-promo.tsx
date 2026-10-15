@@ -24,7 +24,9 @@ export function HostPromo() {
         fill
         sizes="100vw"
         className="reveal-up object-cover"
-        style={{ '--rev-start': '0%', '--rev-end': '45%' } as React.CSSProperties}
+        style={
+          { objectPosition: hostPromo.image.position, '--rev-start': '0%', '--rev-end': '45%' } as React.CSSProperties
+        }
       />
 
       {/*

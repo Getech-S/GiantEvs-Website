@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS stations (
   lat DOUBLE PRECISION NOT NULL,
   lng DOUBLE PRECISION NOT NULL,
   connectors TEXT[] NOT NULL DEFAULT '{}',
+  -- Peak output of the station's fastest charger, in kW; NULL when not set.
+  power_kw INTEGER,
   free_bays INTEGER NOT NULL,
   total_bays INTEGER NOT NULL,
   view_count INTEGER NOT NULL DEFAULT 0,
@@ -35,3 +37,6 @@ CREATE TABLE IF NOT EXISTS news_articles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Added after the first deploy: brings an existing stations table up to date.
+ALTER TABLE stations ADD COLUMN IF NOT EXISTS power_kw INTEGER;

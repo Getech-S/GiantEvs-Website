@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import L from 'leaflet';
 import { MapContainer, Marker, Popup, TileLayer, useMap, ZoomControl } from 'react-leaflet';
 
+import { chargerPinIcon } from '@/components/stations/charger-pin';
 import { MAP_TILE_ATTRIBUTION, MAP_TILE_MAX_ZOOM, MAP_TILE_SUBDOMAINS, MAP_TILE_URL } from '@/lib/map-tiles';
 import { stationStatus, type StationRecord } from '@/lib/stations/types';
 
@@ -17,19 +18,9 @@ const STATUS_COLOR: Record<'available' | 'occupied', string> = {
   occupied: '#B45309',
 };
 
+/** Charger pin in the station's status colour — green while bays are free, amber when full. */
 function markerIcon(status: 'available' | 'occupied', selected: boolean): L.DivIcon {
-  const color = STATUS_COLOR[status];
-  const size = selected ? 22 : 16;
-  return L.divIcon({
-    className: '',
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    html: `<span style="
-      display:block;width:${size}px;height:${size}px;border-radius:999px;
-      background:${color};border:2px solid #ffffff;
-      box-shadow:0 1px 4px rgba(0,0,0,0.35)${selected ? ',0 0 0 4px ' + color + '33' : ''};
-    "></span>`,
-  });
+  return chargerPinIcon(STATUS_COLOR[status], { selected });
 }
 
 /** Recentres the map when the selected station (or the visible set) changes. */

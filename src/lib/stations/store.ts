@@ -26,6 +26,7 @@ type StationRow = {
   lat: number;
   lng: number;
   connectors: string[];
+  power_kw: number | null;
   free_bays: number;
   total_bays: number;
   view_count: number;
@@ -48,6 +49,7 @@ function rowToStation(row: StationRow): StationRecord {
     lat: Number(row.lat),
     lng: Number(row.lng),
     connectors: row.connectors as ChargerTag[],
+    powerKw: row.power_kw ?? null,
     freeBays: row.free_bays,
     totalBays: row.total_bays,
     viewCount: row.view_count,
@@ -55,6 +57,12 @@ function rowToStation(row: StationRow): StationRecord {
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
   };
+}
+
+/** A request that omits powerKw (or sends "") means "not set", stored as null. */
+function withPower(input: StationInput): StationInput {
+  const value = input.powerKw as unknown;
+  return { ...input, powerKw: value === undefined || value === '' ? null : (value as number | null) };
 }
 
 function validate(input: StationInput): void {
@@ -84,6 +92,9 @@ function validate(input: StationInput): void {
   if (input.connectors.some((tag) => !CHARGER_TAGS.includes(tag))) {
     problems.push('Unrecognised connector type.');
   }
+  if (input.powerKw !== null && (!Number.isInteger(input.powerKw) || input.powerKw < 1 || input.powerKw > 1000)) {
+    problems.push('Charging power must be a whole number of kW between 1 and 1000, or left empty.');
+  }
 
   if (problems.length > 0) throw new StationValidationError(problems.join(' '));
 }
@@ -99,24 +110,26 @@ export async function getStation(id: string): Promise<StationRecord | undefined>
   return rows.length > 0 ? rowToStation(rows[0] as StationRow) : undefined;
 }
 
-export async function createStation(input: StationInput): Promise<StationRecord> {
+export async function createStation(raw: StationInput): Promise<StationRecord> {
+  const input = withPower(raw);
   validate(input);
   const id = randomUUID();
   const rows = await sql`
-    INSERT INTO stations (id, name, address, city, lat, lng, connectors, free_bays, total_bays)
+    INSERT INTO stations (id, name, address, city, lat, lng, connectors, power_kw, free_bays, total_bays)
     VALUES (${id}, ${input.name}, ${input.address}, ${input.city}, ${input.lat}, ${input.lng},
-            ${input.connectors}, ${input.freeBays}, ${input.totalBays})
+            ${input.connectors}, ${input.powerKw}, ${input.freeBays}, ${input.totalBays})
     RETURNING *
   `;
   return rowToStation(rows[0] as StationRow);
 }
 
-export async function updateStation(id: string, input: StationInput): Promise<StationRecord> {
+export async function updateStation(id: string, raw: StationInput): Promise<StationRecord> {
+  const input = withPower(raw);
   validate(input);
   const rows = await sql`
     UPDATE stations
     SET name = ${input.name}, address = ${input.address}, city = ${input.city},
-        lat = ${input.lat}, lng = ${input.lng}, connectors = ${input.connectors},
+        lat = ${input.lat}, lng = ${input.lng}, connectors = ${input.connectors}, power_kw = ${input.powerKw},
         free_bays = ${input.freeBays}, total_bays = ${input.totalBays}, updated_at = now()
     WHERE id = ${id}
     RETURNING *

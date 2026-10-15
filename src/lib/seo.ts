@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 import type { NewsRecord } from '@/lib/news/types';
-import { seo, site } from '@/lib/site';
-import type { StationRecord } from '@/lib/stations/types';
+import { footer, seo, site } from '@/lib/site';
+import { connectorLabel, type StationRecord } from '@/lib/stations/types';
 
 /**
  * Search-engine plumbing shared by every public page: per-page <head>
@@ -17,7 +17,7 @@ import type { StationRecord } from '@/lib/stations/types';
  */
 
 export const shareImage = {
-  url: '/og/giant-evs-share.jpg',
+  url: '/og/giant-evs-remera-hd.jpg',
   width: 1200,
   height: 630,
   alt: 'Giant Evs — EV charging stations in Kigali, Rwanda',
@@ -102,6 +102,8 @@ export function organizationJsonLd() {
         address: postalAddress,
         areaServed: { '@type': 'Country', name: site.address.countryName },
         knowsAbout: ['Electric vehicle charging', 'DC fast charging', 'EV charger installation'],
+        // Ties the brand's real social profiles to this site in Google's eyes.
+        sameAs: footer.socials.filter((social) => social.profile).map((social) => social.href),
         contactPoint: [
           {
             '@type': 'ContactPoint',
@@ -139,7 +141,7 @@ export function stationsJsonLd(stations: StationRecord[]) {
       item: {
         '@type': 'Place',
         name: `${station.name} — ${site.name} EV charging station`,
-        description: `Electric vehicle charging station (${station.connectors.join(', ')}) at ${station.address}, ${station.city}.`,
+        description: `Electric vehicle charging station (${station.connectors.map((tag) => connectorLabel(tag, station)).join(', ')}) at ${station.address}, ${station.city}.`,
         address: {
           '@type': 'PostalAddress',
           streetAddress: station.address,
@@ -149,7 +151,7 @@ export function stationsJsonLd(stations: StationRecord[]) {
         geo: { '@type': 'GeoCoordinates', latitude: station.lat, longitude: station.lng },
         amenityFeature: station.connectors.map((connector) => ({
           '@type': 'LocationFeatureSpecification',
-          name: `${connector} charger`,
+          name: `${connectorLabel(connector, station)} charger`,
           value: true,
         })),
       },

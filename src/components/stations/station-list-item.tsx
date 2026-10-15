@@ -2,7 +2,7 @@
 
 import { MapPin, Zap } from 'lucide-react';
 
-import { stationStatus, type StationRecord } from '@/lib/stations/types';
+import { connectorLabel, stationStatus, type StationRecord } from '@/lib/stations/types';
 import { cn } from '@/lib/utils';
 
 const STATUS_STYLE = {
@@ -71,7 +71,7 @@ export function StationListItem({ station, selected, onSelect }: StationListItem
               className="inline-flex items-center gap-1 text-[0.75rem] leading-4 font-medium text-[#5A6E5A]/65"
             >
               <Zap className="h-3 w-3" strokeWidth={2} aria-hidden />
-              {tag}
+              {connectorLabel(tag, station)}
             </span>
           ))}
         </span>

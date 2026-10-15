@@ -6,9 +6,9 @@ import { partnerHero } from '@/lib/site';
 
 /**
  * Full-bleed image band, above the fold — same treatment as the homepage's
- * Host Promo section (components/sections/host-promo.tsx), same real photo
- * too, just this page's own headline/body and a CTA that scrolls to the
- * enquiry form below instead of linking out.
+ * Host Promo section (components/sections/host-promo.tsx), with this page's
+ * own render, headline/body, and a CTA that scrolls to the enquiry form below
+ * instead of linking out.
  */
 export function PartnerHero() {
   return (
@@ -22,7 +22,9 @@ export function PartnerHero() {
         fill
         sizes="100vw"
         className="reveal-up object-cover"
-        style={{ '--rev-start': '0%', '--rev-end': '45%' } as React.CSSProperties}
+        style={
+          { objectPosition: partnerHero.image.position, '--rev-start': '0%', '--rev-end': '45%' } as React.CSSProperties
+        }
       />
 
       {/* Same legibility ramp as Host Promo: strong at the copy edge, fading across the frame. */}

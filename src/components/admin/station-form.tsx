@@ -35,6 +35,8 @@ export function StationForm(props: StationFormProps) {
   const [lat, setLat] = useState(initial?.lat ?? KIGALI_DEFAULT.lat);
   const [lng, setLng] = useState(initial?.lng ?? KIGALI_DEFAULT.lng);
   const [connectors, setConnectors] = useState<ChargerTag[]>(initial?.connectors ?? []);
+  // Kept as text so the field can be left empty ("not set") rather than forced to 0.
+  const [powerKw, setPowerKw] = useState(initial?.powerKw ? String(initial.powerKw) : '');
   const [totalBays, setTotalBays] = useState(initial?.totalBays ?? 4);
   const [freeBays, setFreeBays] = useState(initial?.freeBays ?? 4);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +53,17 @@ export function StationForm(props: StationFormProps) {
     setSubmitting(true);
     setError(null);
 
-    const payload: StationInput = { name, address, city, lat, lng, connectors, totalBays, freeBays };
+    const payload: StationInput = {
+      name,
+      address,
+      city,
+      lat,
+      lng,
+      connectors,
+      powerKw: powerKw.trim() === '' ? null : Number(powerKw),
+      totalBays,
+      freeBays,
+    };
     const url = props.mode === 'edit' ? `/api/stations/${props.station.id}` : '/api/stations';
     const method = props.mode === 'edit' ? 'PATCH' : 'POST';
 
@@ -179,6 +191,27 @@ export function StationForm(props: StationFormProps) {
             })}
           </div>
         </fieldset>
+
+        <div>
+          <label htmlFor="powerKw" className={labelClass}>
+            Charging power (kW) <span className="font-normal text-[#5A6E5A]">— optional</span>
+          </label>
+          <input
+            id="powerKw"
+            type="number"
+            min={1}
+            max={1000}
+            step={1}
+            inputMode="numeric"
+            value={powerKw}
+            onChange={(event) => setPowerKw(event.target.value)}
+            placeholder="e.g. 240"
+            className={inputClass}
+          />
+          <p className="mt-1.5 text-xs text-[#5A6E5A]">
+            Peak output of the fastest charger here. Shows on the public site as e.g. &ldquo;240 kW DC Fast&rdquo;.
+          </p>
+        </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
