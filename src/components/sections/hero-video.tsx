@@ -83,9 +83,6 @@ export function HeroVideo() {
         preload="metadata"
         className="hero-video-motion absolute inset-0 h-full w-full object-cover"
       >
-        {/* 1080p for phones/tablets (they can't show more), 4K from 1280px up.
-            A browser that ignores `media` takes the first, lighter file. */}
-        <source src={hero.video.srcSmall} type="video/mp4" media="(max-width: 1279px)" />
         <source src={hero.video.src} type="video/mp4" />
       </video>
     </div>

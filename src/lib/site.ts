@@ -101,17 +101,14 @@ export const hero = {
   primaryCta: { label: 'Find a Station', href: '/stations' },
   secondaryCta: { label: 'Host a Charger', href: '/partner' },
   video: {
+    src: '/media/hero-charging.mp4',
     /**
-     * 12-second loop (18s-30s) from the architect's walkthrough of a Giant Evs
-     * solar-canopy site: under the canopy, then the charger beside a Tesla.
-     * AI-upscaled 4x (Real-ESRGAN) from the 832x464 source — regenerate with
-     * scripts/media/prepare-hero-video.py. `src` is 4K for large screens;
-     * `srcSmall` is 1080p for phones and tablets (see hero-video.tsx).
+     * 40x23 JPEG of the video's own mid-point frame, inlined so the hero has
+     * a colour-accurate placeholder on first paint with zero extra requests.
+     * Regenerate with `python scripts/prepare-hero-video.py <src>`.
      */
-    src: '/media/hero-remera-station-4k.mp4',
-    srcSmall: '/media/hero-remera-station-1080.mp4',
-    /** 40px JPEG of a frame one second in, inlined as the placeholder behind the video. */
-    lqip: 'data:image/jpeg;base64,/9j//gAQTGF2YzYxLjE5LjEwMAD/2wBDAAgMDA4MDhAQEBAQEBMSExQUFBMTExMUFBQVFRUZGRkVFRUUFBUVGBgZGRscGxoaGRocHB4eHiQkIiIqKiszMz7/xACDAAEBAQEBAQAAAAAAAAAAAAAGBQcBAAQBAAMBAAAAAAAAAAAAAAAAAAMCAQAQAAIBAgQCBAoLAQAAAAAAAAIBAwQRIQAxEkEFIjJRExSSoUJxNJEVBmGxs4F0VHJzUtPUUzURAAICAQMFAQAAAAAAAAAAAAABAiERElETQZGhsVJx/8AAEQgAFgAoAwEiAAIRAAMRAP/aAAwDAQACEQMRAD8AQcqnnjjh8JkjA8CIjsykG/B6L58c26atlOWdVHduLBxYiWFsU8dL4rJmtrkGxOKkJiTQqWqS2tq/nRptWurbduOuT8fMqgDEVFCyuTsoiliVx13jqmm3gKV3lLe5s43PVAuOulPoWI2QoL2Sve3VX25u1XxNTgmxl6Q9JjEHeYYYETexdmqyG5jUT1Ma3pCKTZ9ykIu/A2OLGyTSemYRqohowESjUUxOOyEd5IJAkYmSW627a8b50ZaM1JX19iznrwnminzXmcnNu7BRl0biivciw8+1h9mTfu+o/Z5Vn7oyiiTbjRWTwbdnfVXTF+VaZ54bB+Dj8aX+xmcsJW2/AL8a7moV8Vqvqg1JtvuV+t2Jpq91xwzN5hQUtFIUZnVMgiU0qjMRRNq7sdkWj0sh+WbnMPW4/TF9LzP+IvXKr7oP1Y5KmFMsOtUokEQMI9zG7bZ4tdrdlbgi1yhpa6nkNKpp+9iUpk0isbZxxgscME+lZWxyGg6hfqZswcfz/wAea7IPeZ/DkKiVRSTSxIsUEljH0dq9ryM911P+0XivOz1f/Oj9GQ+R8cPlCOK2P//Z',
+    lqip:
+      'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAwICQsJCAwLCgsODQwOEh4UEhEREiUbHBYeLCcuLisnKyoxN0Y7MTRCNCorPVM+QkhKTk9OLztWXFVMW0ZNTkv/2wBDAQ0ODhIQEiQUFCRLMisyS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0v/wAARCAAWACgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDjr6T5AjybgTvDY9sf0qpb+WWzLKoz2INO86Jmbz1LkcAg/KPrT41hUbTCJCO5z/jTWgnqOKLJcERqArH5cHOB/OrCWJki3I6kkZCjOTzj0phu1gidY4YkLjBwoJx+PStC1FuiYdX3Lxndj5d2enriqUmS0Zt3bOsTM6sXGAOO1Fa8iK8f7uOXYM/e9MD2oqWuw0cgr5jz3wR0qzb2090P9aAvpRRQM07XSIgytJI7kenArZjtIApcKQ3rxmiiqRnIo6pqEkYEaEgnnJooorOT1KR//9k=',
   },
 } as const;
 
